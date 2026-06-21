@@ -1,417 +1,415 @@
-# Manual do Sistema de Logs — setup.sh
+# Logging System Manual — setup.sh
 
-Este documento descreve o funcionamento, a estrutura e as convenções do sistema de logging implementado no `setup.sh`.
-
----
-
-## Índice
-
-- [Visão Geral](#visão-geral)
-- [Localização e Nomenclatura dos Arquivos](#localização-e-nomenclatura-dos-arquivos)
-- [Estrutura do Arquivo de Log](#estrutura-do-arquivo-de-log)
-- [Funções de Logging](#funções-de-logging)
-- [Funções de Execução com Log](#funções-de-execução-com-log)
-- [Tipos de Registro](#tipos-de-registro)
-- [Exemplo de Log Completo](#exemplo-de-log-completo)
-- [Boas Práticas para Manutenção](#boas-práticas-para-manutenção)
+This document describes the design, structure, and conventions of the logging system implemented in `setup.sh`.
 
 ---
 
-## Visão Geral
+## Table of Contents
 
-O sistema de logs foi projetado para registrar com precisão cada etapa da execução do `setup.sh`, permitindo:
-
-- **Rastreabilidade total** — cada ação, comando e resultado é documentado com timestamp
-- **Diagnóstico facilitado** — em caso de falha, o log indica exatamente em qual passo e comando o erro ocorreu
-- **Auditoria de escolhas** — as respostas do usuário nos prompts interativos são registradas
-- **Separação de contextos** — cada execução gera um arquivo de log independente e identificável
-
-Os logs são gerados exclusivamente em tempo de execução e **nunca são versionados** (a pasta `logs/` está no `.gitignore`).
+- [Overview](#overview)
+- [File Location and Naming](#file-location-and-naming)
+- [Log File Structure](#log-file-structure)
+- [Logging Functions](#logging-functions)
+- [Execution-with-Logging Functions](#execution-with-logging-functions)
+- [Record Types Reference](#record-types-reference)
+- [Full Log Example](#full-log-example)
+- [Maintenance Guidelines](#maintenance-guidelines)
 
 ---
 
-## Localização e Nomenclatura dos Arquivos
+## Overview
 
-### Pasta
+The logging system is designed to record every step of `setup.sh` execution with full precision, enabling:
+
+- **Complete traceability** — every action, command, and result is documented with a timestamp
+- **Easy diagnosis** — on failure, the log pinpoints exactly which step and command caused the error
+- **User choice audit** — responses to interactive prompts are captured in the log
+- **Isolated execution records** — each run produces its own identifiable log file
+
+Logs are generated only at runtime and are **never version-controlled** (the `logs/` directory is listed in `.gitignore`).
+
+---
+
+## File Location and Naming
+
+### Directory
 
 ```
-<raiz do repositório>/logs/
+<repository root>/logs/
 ```
 
-A pasta `logs/` é criada automaticamente pelo script na primeira execução, caso não exista.
+The `logs/` directory is created automatically by the script on the first run if it does not exist.
 
-### Nome do arquivo
+### File name format
 
 ```
-YYYY-MM-DD-HH-MM-SS-<usuarioLinux>.log
+YYYY-MM-DD-HH-MM-SS-<linuxUser>.log
 ```
 
-| Componente | Descrição | Exemplo |
+| Component | Description | Example |
 | :--- | :--- | :--- |
-| `YYYY` | Ano com 4 dígitos | `2026` |
-| `MM` | Mês com 2 dígitos | `06` |
-| `DD` | Dia com 2 dígitos | `21` |
-| `HH` | Hora (24h) com 2 dígitos | `14` |
-| `MM` | Minutos com 2 dígitos | `30` |
-| `SS` | Segundos com 2 dígitos | `05` |
-| `<usuarioLinux>` | Resultado de `whoami` no momento da execução | `smarchiori` |
+| `YYYY` | 4-digit year | `2026` |
+| `MM` | 2-digit month | `06` |
+| `DD` | 2-digit day | `21` |
+| `HH` | 2-digit hour (24h) | `14` |
+| `MM` | 2-digit minutes | `30` |
+| `SS` | 2-digit seconds | `05` |
+| `<linuxUser>` | Output of `whoami` at execution time | `smarchiori` |
 
-**Exemplo de nome completo:**
+**Full name example:**
 
 ```
 2026-06-21-14-30-05-smarchiori.log
 ```
 
-Cada execução do script produz um arquivo separado, mesmo que sejam executadas no mesmo dia. Isso garante que execuções consecutivas não se sobreponham.
+Each script run produces a separate file, even if multiple runs happen on the same day. This prevents consecutive executions from overwriting each other.
 
 ---
 
-## Estrutura do Arquivo de Log
+## Log File Structure
 
-O arquivo de log é dividido em três partes:
+The log file is divided into three parts:
 
-### 1. Cabeçalho
+### 1. Header
 
-Gerado uma única vez no início da execução pela função `init_log`. Contém metadados do ambiente:
+Generated once at startup by `init_log`. Contains environment metadata:
 
 ```
 ================================================================================
   DEEPSEEK SETUP LOG
-  Início:          2026-06-21 14:30:05
-  Usuário Linux:   smarchiori
-  Hostname:        minha-maquina
-  Sistema:         Linux x86_64 6.x.x
+  Started:         2026-06-21 14:30:05
+  Linux user:      smarchiori
+  Hostname:        my-machine
+  System:          Linux x86_64 6.x.x
   Kernel:          6.x.x-xxx.fc44.x86_64
-  Total de passos: 13
+  Total steps:     13
 ================================================================================
 ```
 
-### 2. Passos
+### 2. Steps
 
-Cada função principal do script corresponde a um passo numerado. Os passos são delimitados por separadores visuais e identificados por número sequencial e nome:
+Each main function of the script corresponds to a numbered step, delimited by visual separators:
 
 ```
 ────────────────────────────────────────────────────────────────────────────────
-[2026-06-21 14:30:06] PASSO 3/13: Detecção da distribuição Linux
+[2026-06-21 14:30:06] STEP 3/13: Linux distribution detection
 ────────────────────────────────────────────────────────────────────────────────
-  [2026-06-21 14:30:06] AÇÃO:      Lendo /etc/os-release
-  [2026-06-21 14:30:06] DADO:      ID=fedora
-  [2026-06-21 14:30:06] DADO:      PRETTY_NAME=Fedora Linux 44 (Cinnamon)
-  [2026-06-21 14:30:06] RESULTADO: OK    — Fedora Linux 44 — família: fedora
+  [2026-06-21 14:30:06] ACTION:    Reading /etc/os-release
+  [2026-06-21 14:30:06] DATA:      ID=fedora
+  [2026-06-21 14:30:06] DATA:      PRETTY_NAME=Fedora Linux 44 (Cinnamon)
+  [2026-06-21 14:30:06] RESULT:    OK    — Fedora Linux 44 — family: fedora
 ```
 
-### 3. Rodapé
+### 3. Footer
 
-Gerado ao final da execução bem-sucedida pela função `print_summary`:
+Generated at the end of a successful run by `print_summary`:
 
 ```
 ================================================================================
-  FIM DO SETUP
-  Término:          2026-06-21 14:52:18
-  Modelo instalado: deepseek-r1:7b
-  Passos:           13/13 concluídos
+  SETUP COMPLETE
+  Finished:         2026-06-21 14:52:18
+  Model installed:  deepseek-r1:7b
+  Steps:            13/13 completed
 ================================================================================
 ```
 
 ---
 
-## Funções de Logging
+## Logging Functions
 
-Todas as funções de log escrevem **exclusivamente no arquivo de log** (não exibem nada no terminal). O formato geral de cada linha é:
+All logging functions write **exclusively to the log file** — they produce no terminal output. The general format of each line is:
 
 ```
-  [YYYY-MM-DD HH:MM:SS] TIPO:      Conteúdo
+  [YYYY-MM-DD HH:MM:SS] TYPE:      Content
 ```
 
-A indentação de dois espaços e o alinhamento dos tipos facilitam a leitura visual do log.
+The two-space indentation and column-aligned type labels make the log easy to scan visually.
 
 ---
 
-### `log_step "<nome do passo>"`
+### `log_step "<step name>"`
 
-Incrementa o contador de passos e registra o separador de seção.
+Increments the step counter and writes the section separator.
 
-**Quando usar:** no início de cada função principal do script, representando uma etapa de alto nível.
+**When to use:** at the beginning of each main function, representing a high-level stage of the setup.
 
-**Efeito no log:**
+**Log output:**
 ```
 ────────────────────────────────────────────────────────────────────────────────
-[2026-06-21 14:30:10] PASSO 4/13: Detecção de GPU
+[2026-06-21 14:30:10] STEP 4/13: GPU detection
 ────────────────────────────────────────────────────────────────────────────────
 ```
 
 ---
 
-### `log_action "<descrição>"`
+### `log_action "<description>"`
 
-Descreve em linguagem natural o que está prestes a ser feito. Deve preceder `log_cmd` quando um comando será executado.
+Describes in plain language what is about to happen. Should precede `log_cmd` when a command will be executed.
 
-**Quando usar:** antes de qualquer ação relevante — verificação, leitura de arquivo, chamada a ferramenta externa.
+**When to use:** before any relevant operation — a file read, a check, a call to an external tool.
 
-**Efeito no log:**
+**Log output:**
 ```
-  [2026-06-21 14:30:10] AÇÃO:      Listando dispositivos PCI via lspci
+  [2026-06-21 14:30:10] ACTION:    Listing PCI devices via lspci
 ```
 
 ---
 
-### `log_cmd "<comando>"`
+### `log_cmd "<command>"`
 
-Registra o comando exato que será ou foi executado, incluindo argumentos.
+Records the exact command (with arguments) that will be or was executed.
 
-**Quando usar:** sempre que um comando externo for invocado (não use para código shell interno simples como atribuições).
+**When to use:** whenever an external binary is invoked. Do not use for simple internal shell operations like variable assignments.
 
-**Efeito no log:**
+**Log output:**
 ```
-  [2026-06-21 14:30:10] COMANDO:   lspci
+  [2026-06-21 14:30:10] COMMAND:   lspci
 ```
 
-> Para comandos construídos dinamicamente, registre a forma expandida:
+> For dynamically built commands, log the expanded form:
 > ```bash
 > log_cmd "ollama pull $OLLAMA_MODEL"
 > ```
 
 ---
 
-### `log_data "<chave>: <valor>"` ou `log_data "<texto livre>"`
+### `log_data "<key>: <value>"` or `log_data "<free text>"`
 
-Registra um dado coletado ou uma variável relevante para o contexto do passo.
+Records a collected data point or a relevant variable value.
 
-**Quando usar:** após coletar informações do sistema (RAM, GPU, versão de software, caminho de arquivo, etc.).
+**When to use:** after gathering system information — RAM, GPU, software version, file path, etc.
 
-**Efeito no log:**
+**Log output:**
 ```
-  [2026-06-21 14:30:11] DADO:      GPU_VENDOR=nvidia
-  [2026-06-21 14:30:11] DADO:      GPU_NAME=NVIDIA GeForce GTX 1650 Mobile
-  [2026-06-21 14:30:11] DADO:      VRAM total: 4096 MB
-```
-
----
-
-### `log_choice "<descrição da escolha>"`
-
-Registra a resposta do usuário a um prompt interativo (`read -rp`).
-
-**Quando usar:** imediatamente após cada `read` que coleta input do usuário.
-
-**Efeito no log:**
-```
-  [2026-06-21 14:30:45] ESCOLHA:   Entrada do usuário: '2'
-  [2026-06-21 14:30:45] ESCOLHA:   Modelo final: deepseek-r1:7b
+  [2026-06-21 14:30:11] DATA:      GPU_VENDOR=nvidia
+  [2026-06-21 14:30:11] DATA:      GPU_NAME=NVIDIA GeForce GTX 1650 Mobile
+  [2026-06-21 14:30:11] DATA:      VRAM total: 4096 MB
 ```
 
 ---
 
-### `log_output "<rótulo>" "<conteúdo>"`
+### `log_choice "<choice description>"`
 
-Registra a saída de um comando externo, indentada para distinção visual. Não faz nada se o conteúdo for vazio.
+Records the user's response to an interactive prompt (`read -rp`).
 
-**Quando usar:** após capturar a saída de ferramentas como `lspci`, `nvidia-smi`, `ollama list`, `systemctl status`, etc.
+**When to use:** immediately after each `read` that collects user input.
 
-**Efeito no log:**
+**Log output:**
 ```
-  [2026-06-21 14:30:11] Dispositivos VGA/Display detectados:
+  [2026-06-21 14:30:45] CHOICE:    User input: '2'
+  [2026-06-21 14:30:45] CHOICE:    Final model: deepseek-r1:7b
+```
+
+---
+
+### `log_output "<label>" "<content>"`
+
+Records the raw output of an external command, indented for visual distinction. Does nothing if the content is empty.
+
+**When to use:** after capturing output from tools such as `lspci`, `nvidia-smi`, `ollama list`, `systemctl status`, etc.
+
+**Log output:**
+```
+  [2026-06-21 14:30:11] VGA/Display devices detected:
       00:02.0 VGA compatible controller: Intel UHD Graphics
       01:00.0 VGA compatible controller: NVIDIA GeForce GTX 1650 Mobile
 ```
 
 ---
 
-### `log_result_ok "<mensagem>"`
-### `log_result_warn "<mensagem>"`
-### `log_result_err "<mensagem>"`
+### `log_result_ok "<message>"`
+### `log_result_warn "<message>"`
+### `log_result_err "<message>"`
 
-Registram o resultado de um passo ou ação, com três níveis de severidade:
+Record the outcome of a step or action, at three severity levels:
 
-| Função | Prefixo no log | Significado |
+| Function | Log prefix | Meaning |
 | :--- | :--- | :--- |
-| `log_result_ok` | `RESULTADO: OK    —` | Ação concluída com sucesso |
-| `log_result_warn` | `RESULTADO: AVISO —` | Ação concluída com ressalvas ou comportamento alternativo |
-| `log_result_err` | `RESULTADO: ERRO  —` | Ação falhou |
+| `log_result_ok` | `RESULT: OK    —` | Action completed successfully |
+| `log_result_warn` | `RESULT: WARN  —` | Action completed with caveats or fallback behavior |
+| `log_result_err` | `RESULT: ERROR —` | Action failed |
 
-**Quando usar:** ao final de cada ação ou ao final de cada função de passo, para fechar o contexto com um resultado claro.
+**When to use:** at the end of each action or main step function, to close the context with a clear outcome.
 
-**Efeito no log:**
+**Log output:**
 ```
-  [2026-06-21 14:30:11] RESULTADO: OK    — GPU: NVIDIA GeForce GTX 1650 Mobile (vendor: nvidia)
-  [2026-06-21 14:30:20] RESULTADO: AVISO — nvidia-smi ausente ou com falha
-  [2026-06-21 14:30:55] RESULTADO: ERRO  — exit 1
+  [2026-06-21 14:30:11] RESULT:    OK    — GPU: NVIDIA GeForce GTX 1650 Mobile (vendor: nvidia)
+  [2026-06-21 14:30:20] RESULT:    WARN  — nvidia-smi not found or non-functional
+  [2026-06-21 14:30:55] RESULT:    ERROR — exit 1
 ```
 
-> `log_result_err` também é chamado automaticamente pela função `die()` antes de encerrar o script.
+> `log_result_err` is also called automatically by the `die()` function before the script exits.
 
 ---
 
-## Funções de Execução com Log
+## Execution-with-Logging Functions
 
-Estas funções combinam execução de comando com registro automático no log. São a forma preferida de chamar ferramentas externas no script.
+These functions combine command execution with automatic log recording. They are the preferred way to call external tools in the script.
 
 ---
 
-### `run_capture "<descrição>" <comando> [args...]`
+### `run_capture "<description>" <command> [args...]`
 
-Executa um comando capturando toda a sua saída (stdout + stderr). A saída é registrada no log e também ecoada no terminal. Ideal para comandos rápidos onde o resultado completo é necessário antes de continuar.
+Executes a command by capturing its full output (stdout + stderr). The output is written to the log and also echoed to the terminal. Best for fast commands where the complete result is needed before continuing.
 
-**Comportamento:**
-1. Registra `AÇÃO` e `COMANDO` no log
-2. Executa o comando e captura a saída em memória
-3. Registra a saída no log via `log_output`
-4. Registra `RESULTADO` com o exit code
-5. Ecoa a saída no terminal
-6. Retorna o exit code original do comando
+**Behavior:**
+1. Writes `ACTION` and `COMMAND` to the log
+2. Executes the command and captures output in memory
+3. Writes captured output to the log via `log_output`
+4. Writes `RESULT` with the exit code
+5. Echoes the output to the terminal
+6. Returns the original exit code
 
-**Quando usar:** verificações de sistema, consultas de versão, leitura de configurações — qualquer comando que termine rapidamente e cujo output completo seja relevante para o log.
+**When to use:** system checks, version queries, config reads — any command that finishes quickly and whose full output is relevant to the log.
 
-**Exemplo de uso:**
+**Example:**
 ```bash
-run_capture "Verificando versão do Ollama" ollama --version
+run_capture "Checking Ollama version" ollama --version
 ```
 
-**Limitação:** não adequado para comandos de longa duração, pois o terminal fica em silêncio enquanto aguarda o término.
+**Limitation:** not suitable for long-running commands, as the terminal stays silent while waiting for completion.
 
 ---
 
-### `run_live "<descrição>" <comando> [args...]`
+### `run_live "<description>" <command> [args...]`
 
-Executa um comando exibindo a saída em tempo real no terminal (via `tee`) e, ao final, salva uma cópia limpa (sem códigos ANSI) no log. Ideal para operações demoradas onde o feedback ao vivo é importante.
+Executes a command with live output on the terminal (via `tee`), then saves a clean copy (ANSI-stripped) to the log after completion. Best for slow operations where real-time feedback matters.
 
-**Comportamento:**
-1. Registra `AÇÃO` e `COMANDO` no log
-2. Executa o comando com saída ao vivo via `tee` para um arquivo temporário
-3. Ao concluir, processa o arquivo temporário removendo sequências ANSI (`\x1b[...m`) e carriage returns (`\r`)
-4. Appenda a saída limpa ao log
-5. Remove o arquivo temporário
-6. Registra `RESULTADO` com o exit code
-7. Retorna o exit code original do comando
+**Behavior:**
+1. Writes `ACTION` and `COMMAND` to the log
+2. Runs the command with live output via `tee` to a temporary file
+3. On completion, post-processes the temp file — removes ANSI escape sequences (`\x1b[...m`) and carriage returns (`\r`)
+4. Appends the clean output to the log
+5. Removes the temporary file
+6. Writes `RESULT` with the exit code
+7. Returns the original exit code
 
-**Quando usar:** instalações (`curl | sh`), downloads de modelos (`ollama pull`), operações de gerenciador de pacotes (`dnf`, `apt-get`) — qualquer comando com duração de segundos a minutos.
+**When to use:** installations (`curl | sh`), model downloads (`ollama pull`), package manager operations (`dnf`, `apt-get`) — any command that takes seconds to minutes with visible progress.
 
-**Exemplo de uso:**
+**Example:**
 ```bash
-run_live "Download do modelo deepseek-r1:7b" ollama pull deepseek-r1:7b
+run_live "Downloading deepseek-r1:7b" ollama pull deepseek-r1:7b
 ```
 
-**Nota sobre códigos ANSI:** a remoção de ANSI é necessária porque barras de progresso e cores poluiriam o log com sequências de escape ilegíveis. O terminal continua recebendo a saída colorida normalmente.
+**Note on ANSI codes:** stripping ANSI is necessary because progress bars and colors would pollute the log with unreadable escape sequences. The terminal still receives the full colored output normally.
 
 ---
 
-## Tipos de Registro
+## Record Types Reference
 
-Resumo de todos os tipos de linha que podem aparecer no log e seu significado:
-
-| Tipo | Função responsável | Propósito |
+| Type label | Responsible function | Purpose |
 | :--- | :--- | :--- |
-| `PASSO N/T:` | `log_step` | Delimita uma etapa de alto nível |
-| `AÇÃO:` | `log_action` | Descreve a intenção da próxima operação |
-| `COMANDO:` | `log_cmd` | Registra o comando exato a ser executado |
-| `DADO:` | `log_data` | Armazena valor coletado do sistema ou variável |
-| `ESCOLHA:` | `log_choice` | Registra input interativo do usuário |
-| `<rótulo>:` | `log_output` | Saída bruta de uma ferramenta externa |
-| `RESULTADO: OK` | `log_result_ok` | Ação concluída com sucesso |
-| `RESULTADO: AVISO` | `log_result_warn` | Ação concluída com comportamento alternativo |
-| `RESULTADO: ERRO` | `log_result_err` | Ação falhou |
+| `STEP N/T:` | `log_step` | Delimits a high-level setup stage |
+| `ACTION:` | `log_action` | Describes the intent of the next operation |
+| `COMMAND:` | `log_cmd` | Records the exact command to be executed |
+| `DATA:` | `log_data` | Stores a value collected from the system |
+| `CHOICE:` | `log_choice` | Records interactive user input |
+| `<label>:` | `log_output` | Raw output from an external tool |
+| `RESULT: OK` | `log_result_ok` | Action completed successfully |
+| `RESULT: WARN` | `log_result_warn` | Action completed with fallback behavior |
+| `RESULT: ERROR` | `log_result_err` | Action failed |
 
 ---
 
-## Exemplo de Log Completo
+## Full Log Example
 
-Trecho representativo de um log real gerado pelo script:
+Representative excerpt from a real log file:
 
 ```
 ================================================================================
   DEEPSEEK SETUP LOG
-  Início:          2026-06-21 14:30:05
-  Usuário Linux:   smarchiori
-  Hostname:        notebook-dev
-  Sistema:         Linux x86_64
+  Started:         2026-06-21 14:30:05
+  Linux user:      smarchiori
+  Hostname:        dev-notebook
+  System:          Linux x86_64
   Kernel:          7.0.12-201.fc44.x86_64
-  Total de passos: 13
+  Total steps:     13
 ================================================================================
 
 ────────────────────────────────────────────────────────────────────────────────
-[2026-06-21 14:30:05] PASSO 1/13: Verificação de privilégios
+[2026-06-21 14:30:05] STEP 1/13: Privilege check
 ────────────────────────────────────────────────────────────────────────────────
-  [2026-06-21 14:30:05] AÇÃO:      Checando se o script está rodando como root (EUID=1000)
-  [2026-06-21 14:30:05] DADO:      Usuário: smarchiori | EUID: 1000
-  [2026-06-21 14:30:05] RESULTADO: OK    — Usuário não-root confirmado
+  [2026-06-21 14:30:05] ACTION:    Checking whether the script is running as root (EUID=1000)
+  [2026-06-21 14:30:05] DATA:      User: smarchiori | EUID: 1000
+  [2026-06-21 14:30:05] RESULT:    OK    — Non-root user confirmed
 
 ────────────────────────────────────────────────────────────────────────────────
-[2026-06-21 14:30:05] PASSO 2/13: Verificação de conectividade com a internet
+[2026-06-21 14:30:05] STEP 2/13: Internet connectivity check
 ────────────────────────────────────────────────────────────────────────────────
-  [2026-06-21 14:30:05] AÇÃO:      Testando acesso HTTP a https://ollama.com (timeout: 5s)
-  [2026-06-21 14:30:05] COMANDO:   curl -fsS --max-time 5 https://ollama.com
-  [2026-06-21 14:30:06] RESULTADO: OK    — Resposta recebida de https://ollama.com
+  [2026-06-21 14:30:05] ACTION:    Testing HTTP access to https://ollama.com (timeout: 5s)
+  [2026-06-21 14:30:05] COMMAND:   curl -fsS --max-time 5 https://ollama.com
+  [2026-06-21 14:30:06] RESULT:    OK    — Response received from https://ollama.com
 
 ────────────────────────────────────────────────────────────────────────────────
-[2026-06-21 14:30:06] PASSO 4/13: Detecção de GPU
+[2026-06-21 14:30:06] STEP 4/13: GPU detection
 ────────────────────────────────────────────────────────────────────────────────
-  [2026-06-21 14:30:06] AÇÃO:      Listando dispositivos PCI via lspci
-  [2026-06-21 14:30:06] COMANDO:   lspci
-  [2026-06-21 14:30:06] Dispositivos VGA/Display detectados:
+  [2026-06-21 14:30:06] ACTION:    Listing PCI devices via lspci
+  [2026-06-21 14:30:06] COMMAND:   lspci
+  [2026-06-21 14:30:06] VGA/Display devices detected:
       00:02.0 VGA compatible controller: Intel UHD Graphics (rev 05)
       01:00.0 VGA compatible controller: NVIDIA GeForce GTX 1650 Mobile (rev a1)
-  [2026-06-21 14:30:06] DADO:      GPU_VENDOR=nvidia
-  [2026-06-21 14:30:06] DADO:      GPU_NAME=NVIDIA GeForce GTX 1650 Mobile (rev a1)
-  [2026-06-21 14:30:06] AÇÃO:      Consultando detalhes da GPU via nvidia-smi
-  [2026-06-21 14:30:06] COMANDO:   nvidia-smi --query-gpu=name,driver_version,memory.total,memory.free --format=csv,noheader
+  [2026-06-21 14:30:06] DATA:      GPU_VENDOR=nvidia
+  [2026-06-21 14:30:06] DATA:      GPU_NAME=NVIDIA GeForce GTX 1650 Mobile (rev a1)
+  [2026-06-21 14:30:06] ACTION:    Querying GPU details via nvidia-smi
+  [2026-06-21 14:30:06] COMMAND:   nvidia-smi --query-gpu=name,driver_version,memory.total,memory.free --format=csv,noheader
   [2026-06-21 14:30:06] nvidia-smi:
       GeForce GTX 1650, 535.183.01, 4096 MiB, 3800 MiB
-  [2026-06-21 14:30:06] RESULTADO: OK    — GPU: NVIDIA GeForce GTX 1650 Mobile (vendor: nvidia)
+  [2026-06-21 14:30:06] RESULT:    OK    — GPU: NVIDIA GeForce GTX 1650 Mobile (vendor: nvidia)
 
 ────────────────────────────────────────────────────────────────────────────────
-[2026-06-21 14:30:07] PASSO 6/13: Seleção do modelo DeepSeek
+[2026-06-21 14:30:07] STEP 6/13: DeepSeek model selection
 ────────────────────────────────────────────────────────────────────────────────
-  [2026-06-21 14:30:07] AÇÃO:      Estimando modelo ideal com base em RAM e VRAM disponíveis
-  [2026-06-21 14:30:07] DADO:      VRAM total: 4096 MB
-  [2026-06-21 14:30:07] DADO:      Critério de seleção: RAM=31GB | VRAM=4GB
-  [2026-06-21 14:30:07] DADO:      Modelo sugerido: deepseek-r1:7b (Melhor custo-benefício para workstations modernas)
-  [2026-06-21 14:30:12] ESCOLHA:   Entrada do usuário: '2'
-  [2026-06-21 14:30:12] ESCOLHA:   Modelo final: deepseek-r1:7b
-  [2026-06-21 14:30:12] RESULTADO: OK    — Modelo selecionado: deepseek-r1:7b
+  [2026-06-21 14:30:07] ACTION:    Estimating best model based on available RAM and VRAM
+  [2026-06-21 14:30:07] DATA:      VRAM total: 4096 MB
+  [2026-06-21 14:30:07] DATA:      Selection criteria: RAM=31GB | VRAM=4GB
+  [2026-06-21 14:30:07] DATA:      Suggested model: deepseek-r1:7b (Best balance for modern workstations)
+  [2026-06-21 14:30:12] CHOICE:    User input: '2'
+  [2026-06-21 14:30:12] CHOICE:    Final model: deepseek-r1:7b
+  [2026-06-21 14:30:12] RESULT:    OK    — Model selected: deepseek-r1:7b
 
 ================================================================================
-  FIM DO SETUP
-  Término:          2026-06-21 14:52:18
-  Modelo instalado: deepseek-r1:7b
-  Passos:           13/13 concluídos
+  SETUP COMPLETE
+  Finished:         2026-06-21 14:52:18
+  Model installed:  deepseek-r1:7b
+  Steps:            13/13 completed
 ================================================================================
 ```
 
 ---
 
-## Boas Práticas para Manutenção
+## Maintenance Guidelines
 
-### Ao adicionar um novo passo ao script
+### When adding a new step to the script
 
-1. Chame `log_step "<nome descritivo>"` no início da função
-2. Use `log_action` antes de cada operação relevante
-3. Use `log_cmd` sempre que invocar um binário externo
-4. Use `log_data` para registrar variáveis e valores coletados
-5. Use `log_choice` após cada `read` interativo
-6. Use `log_output` para saídas de ferramentas externas
-7. Finalize com `log_result_ok`, `log_result_warn` ou `log_result_err`
-8. Atualize `TOTAL_STEPS` no topo do script
+1. Call `log_step "<descriptive name>"` at the start of the function
+2. Use `log_action` before each relevant operation
+3. Use `log_cmd` whenever an external binary is invoked
+4. Use `log_data` to record collected variables and values
+5. Use `log_choice` after each interactive `read`
+6. Use `log_output` for raw output from external tools
+7. Close with `log_result_ok`, `log_result_warn`, or `log_result_err`
+8. Update `TOTAL_STEPS` at the top of the script
 
-### Ao invocar comandos externos
+### When invoking external commands
 
-- Prefira `run_capture` para comandos rápidos (< 2s)
-- Prefira `run_live` para comandos lentos ou com progresso visual
-- Nunca chame binários externos sem registrar antes com `log_action` + `log_cmd`
+- Prefer `run_capture` for fast commands (< 2s)
+- Prefer `run_live` for slow commands or those with visual progress output
+- Never call external binaries without first logging via `log_action` + `log_cmd`
 
-### O que NÃO registrar nos logs
+### What NOT to log
 
-- Senhas, tokens de API ou qualquer credencial
-- Conteúdo de arquivos de configuração que possam conter segredos
-- Dados pessoais além do nome de usuário do sistema operacional
+- Passwords, API tokens, or any credentials
+- Contents of configuration files that may contain secrets
+- Personal data beyond the operating system username
 
-### Retenção e limpeza
+### Log retention and cleanup
 
-Os arquivos de log não são removidos automaticamente. Para limpeza manual:
+Log files are not removed automatically. For manual cleanup:
 
 ```bash
-# Remove logs com mais de 30 dias
+# Remove logs older than 30 days
 find logs/ -name "*.log" -mtime +30 -delete
 
-# Remove todos os logs
+# Remove all logs
 rm -f logs/*.log
 ```

@@ -1,92 +1,92 @@
-# DeepSeek no VS Code — Guia de Configuração para Linux
+# DeepSeek on VS Code — Linux Setup Guide
 
-Guia completo para integrar modelos DeepSeek ao Visual Studio Code em sistemas **Fedora** e **Debian/Ubuntu/Zorin OS**, tanto via API cloud quanto localmente via Ollama.
+Complete guide to integrating DeepSeek models with Visual Studio Code on **Fedora** and **Debian/Ubuntu/Zorin OS**, either via the cloud API or fully offline via Ollama.
 
 ---
 
-## Início Rápido
+## Quick Start
 
-Para configurar tudo automaticamente, execute o script de setup incluído neste repositório:
+To set everything up automatically, run the included setup script:
 
 ```bash
 bash setup.sh
 ```
 
-O script detecta sua distro, GPU e RAM, sugere o modelo ideal, instala o Ollama, baixa o modelo escolhido e gera a configuração do Continue.dev automaticamente. Siga as instruções abaixo para configuração manual ou para entender cada etapa em detalhe.
+The script detects your distro, GPU, and RAM; suggests the best model; installs Ollama; downloads the chosen model; and generates the Continue.dev configuration automatically. Follow the sections below for manual setup or to understand each step in detail.
 
 ---
 
-## Índice
+## Table of Contents
 
-- [Visão Geral](#visão-geral)
-- [Comparativo: Cloud vs. Local](#comparativo-cloud-vs-local)
-- [Extensões Recomendadas](#extensões-recomendadas)
-- [Instalação Local com Ollama](#instalação-local-com-ollama)
-- [Configuração das Extensões](#configuração-das-extensões)
+- [Overview](#overview)
+- [Cloud vs. Local Comparison](#cloud-vs-local-comparison)
+- [Recommended Extensions](#recommended-extensions)
+- [Local Installation with Ollama](#local-installation-with-ollama)
+- [Extension Configuration](#extension-configuration)
 - [Troubleshooting](#troubleshooting)
-- [Referências](#referências)
+- [References](#references)
 
 ---
 
-## Visão Geral
+## Overview
 
-O DeepSeek oferece dois modelos principais:
+DeepSeek offers two primary models:
 
-- **DeepSeek-R1** — modelo de raciocínio avançado (reasoning), ideal para tarefas complexas de lógica e código
-- **DeepSeek-V3** — modelo Mixture-of-Experts de alto throughput, excelente para geração de código e chat geral
+- **DeepSeek-R1** — advanced reasoning model, ideal for complex logic and coding tasks
+- **DeepSeek-V3** — high-throughput Mixture-of-Experts model, excellent for code generation and general chat
 
-Ambos podem ser usados via API cloud ou localmente de forma totalmente offline.
+Both can be used via the cloud API or run locally in fully offline mode.
 
 ---
 
-## Comparativo: Cloud vs. Local
+## Cloud vs. Local Comparison
 
-| Característica | API Cloud | Local via Ollama |
+| Feature | Cloud API | Local via Ollama |
 | :--- | :--- | :--- |
-| Overhead de compute | Nenhum (servidores remotos) | Alto (GPU/CPU/RAM local) |
-| Privacidade dos dados | Sujeito aos Termos de Serviço | 100% air-gapped / privado |
-| Modelos disponíveis | V3 (671B) e R1 (671B) completos | Versões quantizadas (1.5B a 70B) |
-| Custo | Pay-per-token (muito barato) | Gratuito (apenas energia) |
-| Necessidade de internet | Conexão contínua | Apenas no download inicial |
+| Compute overhead | None (remote servers) | High (local GPU/CPU/RAM) |
+| Data privacy | Subject to Terms of Service | 100% air-gapped / private |
+| Available models | Full V3 (671B) and R1 (671B) | Quantized versions (1.5B to 70B) |
+| Cost | Pay-per-token (very affordable) | Free (infrastructure power only) |
+| Internet requirement | Continuous connection | Initial download only |
 
 ---
 
-## Extensões Recomendadas
+## Recommended Extensions
 
 ### Continue.dev
 
-A principal extensão open-source para assistência de código com LLMs. Suporta autocomplete inline (Tab), chat com contexto do codebase (`@codebase`) e refatoração contextual.
+The leading open-source extension for LLM-assisted coding. Supports inline autocomplete (Tab), chat with codebase context (`@codebase`), and contextual refactoring.
 
-**Instalação:** busque por `Continue` no marketplace do VS Code ou acesse [continue.dev](https://continue.dev).
+**Installation:** search for `Continue` in the VS Code marketplace or visit [continue.dev](https://continue.dev).
 
 ### Cline / Roo Code
 
-Agente autônomo que vai além do chat: lê e escreve arquivos diretamente no workspace, executa comandos no terminal e itera sobre erros de compilação/lint automaticamente.
+An autonomous agent that goes beyond chat: reads and writes files directly in your workspace, executes terminal commands, and iterates on compilation/lint errors automatically.
 
-- **Cline** — versão original
-- **Roo Code** — fork ativamente mantido com funcionalidades adicionais
+- **Cline** — original version
+- **Roo Code** — actively maintained fork with additional features
 
-Ideal para refatorações complexas em múltiplos arquivos, geração de testes e scaffolding de projetos.
+Best suited for complex multi-file refactoring, test generation, and project scaffolding.
 
-### Extensões compatíveis com OpenAI
+### OpenAI-Compatible Extensions
 
-A API do DeepSeek é 100% compatível com o formato `v1/chat/completions` da OpenAI. Qualquer extensão que aceite uma base URL customizada funciona, como *Genie AI*, *Llama Coder* e similares.
+DeepSeek's API is 100% compatible with the OpenAI `v1/chat/completions` format. Any extension that accepts a custom base URL works as a drop-in replacement, such as *Genie AI*, *Llama Coder*, and similar tools.
 
 ---
 
-## Instalação Local com Ollama
+## Local Installation with Ollama
 
-### 1. Instalar o Ollama
+### 1. Install Ollama
 
-#### Fedora (Workstation e variantes Atomic)
+#### Fedora (Workstation and Atomic variants)
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-> Em sistemas Atomic (Silverblue, Kinoite), prefira rodar dentro de um container ou via binário gerenciado pelo systemd do usuário.
+> On Atomic systems (Silverblue, Kinoite), prefer running inside a container or via a user-managed systemd binary.
 
-**Aceleração por GPU Nvidia no Fedora** — habilite o RPM Fusion e instale o CUDA:
+**NVIDIA GPU acceleration on Fedora** — enable RPM Fusion and install CUDA:
 
 ```bash
 sudo dnf install akmod-nvidia xorg-x11-drv-nvidia-cuda -y
@@ -98,7 +98,7 @@ sudo dnf install akmod-nvidia xorg-x11-drv-nvidia-cuda -y
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-Verifique se o serviço está rodando:
+Verify the service is running:
 
 ```bash
 sudo systemctl status ollama
@@ -106,24 +106,24 @@ sudo systemctl status ollama
 
 ---
 
-### 2. Escolher e baixar o modelo
+### 2. Choose and download a model
 
-Selecione o tamanho conforme o hardware disponível:
+Select a size based on your available hardware:
 
-| Modelo | Espaço em disco | Hardware recomendado |
+| Model | Disk space | Recommended hardware |
 | :--- | :--- | :--- |
-| `deepseek-r1:1.5b` | ~1.1 GB | Laptops e hardware leve |
-| `deepseek-r1:7b` | ~4.7 GB | 16 GB RAM / 8 GB VRAM (recomendado) |
-| `deepseek-r1:14b` | ~9.0 GB | GPUs mid-to-high tier |
-| `deepseek-r1:32b` / `70b` | 20 GB+ | Setups enterprise com muita VRAM |
+| `deepseek-r1:1.5b` | ~1.1 GB | Laptops and light hardware |
+| `deepseek-r1:7b` | ~4.7 GB | 16 GB RAM / 8 GB VRAM (recommended) |
+| `deepseek-r1:14b` | ~9.0 GB | Mid-to-high tier GPUs |
+| `deepseek-r1:32b` / `70b` | 20 GB+ | Enterprise setups with large VRAM |
 
-Baixar o modelo escolhido:
+Pull your chosen model:
 
 ```bash
 ollama pull deepseek-r1:7b
 ```
 
-Testar no terminal:
+Test it in the terminal:
 
 ```bash
 ollama run deepseek-r1:7b
@@ -131,13 +131,13 @@ ollama run deepseek-r1:7b
 
 ---
 
-## Configuração das Extensões
+## Extension Configuration
 
 ### Continue.dev
 
-Abra o `config.json` do Continue (ícone de engrenagem no canto inferior direito do painel).
+Open the Continue `config.json` (gear icon in the bottom-right corner of the Continue panel).
 
-#### Com Ollama (local/offline)
+#### With Ollama (local/offline)
 
 ```json
 {
@@ -156,11 +156,11 @@ Abra o `config.json` do Continue (ícone de engrenagem no canto inferior direito
 }
 ```
 
-> Usar o modelo 1.5B para autocomplete mantém a latência baixa enquanto o 7B fica disponível para o chat.
+> Using the 1.5B model for autocomplete keeps latency low while the 7B handles chat.
 
-#### Com a API Cloud do DeepSeek
+#### With the DeepSeek Cloud API
 
-Gere sua chave em [platform.deepseek.com](https://platform.deepseek.com/) e configure:
+Generate your key at [platform.deepseek.com](https://platform.deepseek.com/) and configure:
 
 ```json
 {
@@ -169,13 +169,13 @@ Gere sua chave em [platform.deepseek.com](https://platform.deepseek.com/) e conf
       "title": "DeepSeek-V3 (Cloud)",
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "apiKey": "sua-chave-aqui"
+      "apiKey": "your-api-key-here"
     },
     {
       "title": "DeepSeek-R1 (Cloud Reasoning)",
       "provider": "deepseek",
       "model": "deepseek-reasoner",
-      "apiKey": "sua-chave-aqui"
+      "apiKey": "your-api-key-here"
     }
   ]
 }
@@ -185,34 +185,34 @@ Gere sua chave em [platform.deepseek.com](https://platform.deepseek.com/) e conf
 
 ### Cline / Roo Code
 
-1. Abra o painel do **Cline** no VS Code
-2. Clique no ícone de engrenagem (Settings)
-3. Em **Provider**, selecione conforme o modo de uso:
+1. Open the **Cline** panel in VS Code
+2. Click the gear icon (Settings)
+3. Under **Provider**, select based on your setup:
 
 **Local via Ollama:**
 - Base URL: `http://localhost:11434`
-- Model: `deepseek-r1:7b` (ou o tamanho baixado)
+- Model: `deepseek-r1:7b` (or whichever size you downloaded)
 
-**API Cloud:**
+**Cloud API:**
 - Provider: `DeepSeek`
-- API Key: sua chave do portal DeepSeek
-- Model: `deepseek-chat` (V3) ou `deepseek-reasoner` (R1)
+- API Key: your key from the DeepSeek portal
+- Model: `deepseek-chat` (V3) or `deepseek-reasoner` (R1)
 
 ---
 
 ## Troubleshooting
 
-### Geração de tokens muito lenta
+### Very slow token generation
 
-**Causa:** Ollama está rodando apenas na CPU, sem detectar a GPU.
+**Cause:** Ollama is falling back to CPU because it cannot detect the GPU.
 
-**Solução:** Verifique se os drivers CUDA/ROCm estão corretamente instalados:
+**Fix:** Check whether CUDA/ROCm drivers are correctly installed:
 
 ```bash
 sudo journalctl -u ollama --no-pager | grep -iE "(cuda|rocm|gpu)"
 ```
 
-Certifique-se de que seu usuário pertence aos grupos `video` e `render`:
+Make sure your user belongs to the `video` and `render` groups:
 
 ```bash
 sudo usermod -aG video,render $USER
@@ -220,24 +220,24 @@ sudo usermod -aG video,render $USER
 
 ---
 
-### Conflito de porta ou acesso remoto (devcontainers/VMs)
+### Port conflict or remote access (devcontainers/VMs)
 
-Por padrão, o Ollama escuta apenas em `127.0.0.1:11434`. Para expor em rede (útil em devcontainers ou VMs):
+By default, Ollama listens only on `127.0.0.1:11434`. To expose it on the network:
 
-1. Edite o serviço systemd:
+1. Edit the systemd service:
 
 ```bash
 sudo systemctl edit ollama
 ```
 
-2. Adicione a variável de ambiente:
+2. Add the environment variable:
 
 ```ini
 [Service]
 Environment="OLLAMA_HOST=0.0.0.0"
 ```
 
-3. Recarregue e reinicie:
+3. Reload and restart:
 
 ```bash
 sudo systemctl daemon-reload
@@ -246,10 +246,10 @@ sudo systemctl restart ollama
 
 ---
 
-## Referências
+## References
 
-- [Documentação do Ollama](https://ollama.com)
+- [Ollama Documentation](https://ollama.com)
 - [Continue.dev](https://continue.dev)
 - [DeepSeek Developer Portal](https://platform.deepseek.com/)
-- [Repositório do Cline](https://github.com/cline/cline)
-- [Repositório do Roo Code](https://github.com/RooVetGit/Roo-Code)
+- [Cline Repository](https://github.com/cline/cline)
+- [Roo Code Repository](https://github.com/RooVetGit/Roo-Code)
