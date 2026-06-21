@@ -21,7 +21,7 @@ die()     { error "$*"; [[ -n "${LOG_FILE:-}" ]] && log_result_err "FATAL: $*"; 
 SCRIPT_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]:-$0}")" 2>/dev/null || pwd)" && pwd)"
 LOG_DIR="$SCRIPT_DIR/logs"
 LOG_FILE=""
-TOTAL_STEPS=13
+TOTAL_STEPS=14
 CURRENT_STEP=0
 
 _ts() { date '+%Y-%m-%d %H:%M:%S'; }
@@ -518,15 +518,54 @@ test_model() {
     fi
 }
 
-# ─── 13. Continue.dev configuration ──────────────────────────────────────────
+# ─── 13. Continue.dev companion models ───────────────────────────────────────
+pull_continue_models() {
+    log_step "Continue.dev companion models"
+    info "Pulling models required for Continue.dev in VS Code..."
+    log_action "These models are needed for chat, autocomplete, and codebase embeddings"
+    log_data "deepseek-r1 is not used directly in Continue.dev — it lacks proper VS Code rendering"
+
+    # Models: chat, coding chat, coding autocomplete, embeddings
+    local models=(
+        "llama3.1:8b"
+        "qwen2.5-coder:7b"
+        "qwen2.5-coder:1.5b"
+        "nomic-embed-text:latest"
+    )
+    local descriptions=(
+        "general chat model"
+        "coding chat model"
+        "coding autocomplete model"
+        "embeddings model (@codebase indexing)"
+    )
+
+    local i=0
+    for model in "${models[@]}"; do
+        local desc="${descriptions[$i]}"
+        log_action "Pulling $model ($desc)"
+        log_cmd "ollama pull $model"
+        info "Pulling ${BOLD}${model}${NC} — ${desc}..."
+        if run_live "ollama pull $model" ollama pull "$model"; then
+            log_result_ok "$model pulled successfully"
+            success "$model ready"
+        else
+            log_result_warn "$model pull failed — skipping"
+            warn "Failed to pull $model. You can retry manually: ollama pull $model"
+        fi
+        i=$(( i + 1 ))
+    done
+
+    log_result_ok "Continue.dev companion models step complete"
+}
+
+# ─── 14. Continue.dev configuration ──────────────────────────────────────────
 generate_continue_config() {
     log_step "Continue.dev configuration"
     local config_dir="$HOME/.continue"
     local config_file="$config_dir/config.json"
-    local autocomplete_model="deepseek-r1:1.5b"
 
     echo ""
-    read -rp "Generate Continue.dev configuration for this model? [Y/n]: " GEN_CONTINUE
+    read -rp "Generate Continue.dev configuration? [Y/n]: " GEN_CONTINUE
     log_choice "Generate Continue.dev config: '$GEN_CONTINUE'"
 
     if [[ "$GEN_CONTINUE" =~ ^[nN]$ ]]; then
@@ -538,38 +577,36 @@ generate_continue_config() {
     log_action "Creating directory $config_dir"
     log_cmd "mkdir -p $config_dir"
     mkdir -p "$config_dir"
-    log_data "Main model: $OLLAMA_MODEL"
-    log_data "Autocomplete model: $autocomplete_model"
     log_data "Target file: $config_file"
 
     log_action "Writing config.json"
-    cat > "$config_file" <<EOF
+    cat > "$config_file" <<'EOF'
 {
   "models": [
     {
-      "title": "DeepSeek (Local)",
+      "title": "Llama 3.1 8B",
       "provider": "ollama",
-      "model": "${OLLAMA_MODEL}"
+      "model": "llama3.1:8b"
+    },
+    {
+      "title": "Qwen 2.5 Coder 7B",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b"
     }
   ],
   "tabAutocompleteModel": {
-    "title": "DeepSeek Autocomplete",
+    "title": "Qwen 2.5 Coder 1.5B",
     "provider": "ollama",
-    "model": "${autocomplete_model}"
+    "model": "qwen2.5-coder:1.5b"
+  },
+  "embeddingsProvider": {
+    "provider": "ollama",
+    "model": "nomic-embed-text:latest"
   },
   "allowAnonymousTelemetry": false
 }
 EOF
     log_output "Generated config.json" "$(cat "$config_file")"
-
-    if [[ "$OLLAMA_MODEL" != "$autocomplete_model" ]]; then
-        log_action "Starting autocomplete model download in background"
-        log_cmd "ollama pull $autocomplete_model (background)"
-        info "Downloading lightweight model ${autocomplete_model} for autocomplete in background..."
-        ollama pull "$autocomplete_model" >> "$LOG_FILE" 2>&1 &
-        log_data "Autocomplete download PID: $!"
-    fi
-
     log_result_ok "config.json saved to $config_file"
     success "Continue.dev configuration saved to: $config_file"
 }
@@ -628,6 +665,7 @@ main() {
     configure_network_access
     pull_model
     test_model
+    pull_continue_models
     generate_continue_config
     print_summary
 }

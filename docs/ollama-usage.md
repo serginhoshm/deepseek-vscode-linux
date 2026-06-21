@@ -8,11 +8,21 @@ This document records the active Ollama configuration after a successful setup r
 
 | Property | Value |
 | :--- | :--- |
-| **Model** | `deepseek-r1:7b` |
+| **DeepSeek model** | `deepseek-r1:7b` (terminal / Cline) |
 | **Endpoint** | `http://localhost:11434` |
 | **Network exposure** | `0.0.0.0:11434` (accessible on local network) |
-| **Autocomplete model** | `deepseek-r1:1.5b` |
 | **Continue.dev config** | `~/.continue/config.json` |
+
+### Continue.dev model stack
+
+| Role | Model | Purpose |
+| :--- | :--- | :--- |
+| Chat | `llama3.1:8b` | General-purpose chat |
+| Coding chat | `qwen2.5-coder:7b` | Code-focused chat and refactoring |
+| Autocomplete | `qwen2.5-coder:1.5b` | Fast inline tab completion |
+| Embeddings | `nomic-embed-text:latest` | `@codebase` indexing and semantic search |
+
+> `deepseek-r1:7b` outputs `<think>` reasoning tags that Continue.dev does not render correctly. The models above are the recommended stack for VS Code integration.
 
 ---
 
@@ -26,15 +36,24 @@ The `~/.continue/config.json` was generated automatically by `setup.sh`:
 {
   "models": [
     {
-      "title": "DeepSeek (Local)",
+      "title": "Llama 3.1 8B",
       "provider": "ollama",
-      "model": "deepseek-r1:7b"
+      "model": "llama3.1:8b"
+    },
+    {
+      "title": "Qwen 2.5 Coder 7B",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b"
     }
   ],
   "tabAutocompleteModel": {
-    "title": "DeepSeek Autocomplete",
+    "title": "Qwen 2.5 Coder 1.5B",
     "provider": "ollama",
-    "model": "deepseek-r1:1.5b"
+    "model": "qwen2.5-coder:1.5b"
+  },
+  "embeddingsProvider": {
+    "provider": "ollama",
+    "model": "nomic-embed-text:latest"
   },
   "allowAnonymousTelemetry": false
 }

@@ -139,24 +139,43 @@ Open the Continue `config.json` (gear icon in the bottom-right corner of the Con
 
 #### With Ollama (local/offline)
 
+The recommended model stack for Continue.dev uses four models pulled by `setup.sh`:
+
+```bash
+ollama pull llama3.1:8b           # general chat
+ollama pull qwen2.5-coder:7b      # coding chat
+ollama pull qwen2.5-coder:1.5b    # autocomplete
+ollama pull nomic-embed-text:latest  # @codebase embeddings
+```
+
+> `deepseek-r1` is not recommended for Continue.dev — it outputs `<think>` reasoning tags that the extension does not render correctly. Use it via Cline or directly in the terminal instead.
+
 ```json
 {
   "models": [
     {
-      "title": "DeepSeek-R1 (Local)",
+      "title": "Llama 3.1 8B",
       "provider": "ollama",
-      "model": "deepseek-r1:7b"
+      "model": "llama3.1:8b"
+    },
+    {
+      "title": "Qwen 2.5 Coder 7B",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b"
     }
   ],
   "tabAutocompleteModel": {
-    "title": "DeepSeek-R1 1.5B Autocomplete",
+    "title": "Qwen 2.5 Coder 1.5B",
     "provider": "ollama",
-    "model": "deepseek-r1:1.5b"
-  }
+    "model": "qwen2.5-coder:1.5b"
+  },
+  "embeddingsProvider": {
+    "provider": "ollama",
+    "model": "nomic-embed-text:latest"
+  },
+  "allowAnonymousTelemetry": false
 }
 ```
-
-> Using the 1.5B model for autocomplete keeps latency low while the 7B handles chat.
 
 #### With the DeepSeek Cloud API
 
