@@ -592,6 +592,7 @@ models:
     provider: ollama
     model: llama3.1:8b
     apiBase: http://localhost:11434
+    contextLength: 16384
     roles:
       - chat
       - edit
@@ -601,6 +602,7 @@ models:
     provider: ollama
     model: qwen2.5-coder:7b
     apiBase: http://localhost:11434
+    contextLength: 16384
     roles:
       - chat
       - edit
@@ -610,6 +612,7 @@ models:
     provider: ollama
     model: qwen2.5-coder:1.5b
     apiBase: http://localhost:11434
+    contextLength: 4096
     roles:
       - autocomplete
 

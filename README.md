@@ -68,9 +68,17 @@ An autonomous agent that goes beyond chat: reads and writes files directly in yo
 
 Best suited for complex multi-file refactoring, test generation, and project scaffolding.
 
+### Twinny
+
+A fully local, open-source alternative to Continue that is lighter to configure and works well with Ollama out of the box. Good choice if Continue's indexing or context handling feels unreliable on lower-end hardware.
+
+### Llama Coder
+
+Focused exclusively on autocomplete. If tab completion is the primary feature you want and you find Continue's autocomplete laggy, Llama Coder is worth trying — it has less overhead and tends to produce faster inline suggestions.
+
 ### OpenAI-Compatible Extensions
 
-DeepSeek's API is 100% compatible with the OpenAI `v1/chat/completions` format. Any extension that accepts a custom base URL works as a drop-in replacement, such as *Genie AI*, *Llama Coder*, and similar tools.
+DeepSeek's API is 100% compatible with the OpenAI `v1/chat/completions` format. Any extension that accepts a custom base URL works as a drop-in replacement, such as *Genie AI* and similar tools.
 
 ---
 

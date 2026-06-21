@@ -12,8 +12,11 @@ This document covers the complete setup of Continue.dev with a local Ollama inst
 - [Configuration File](#configuration-file)
 - [Model Roles](#model-roles)
 - [Full config.yaml Reference](#full-configyaml-reference)
+- [Using @codebase](#using-codebase)
+- [Ollama Context Window](#ollama-context-window)
 - [Verifying the Setup](#verifying-the-setup)
 - [Troubleshooting](#troubleshooting)
+- [Alternatives to Continue](#alternatives-to-continue)
 - [Cloud API Alternative](#cloud-api-alternative)
 
 ---
@@ -179,6 +182,131 @@ models:
 
 ---
 
+## Using @codebase
+
+`@codebase` is the Continue feature that lets the chat model answer questions about your entire project, not just what is visible in the current file. It requires the embeddings model (`nomic-embed-text`) to be configured and indexed.
+
+### How it works
+
+1. When VS Code opens a workspace, Continue starts indexing it in the background using `nomic-embed-text`. This process chunks all source files, generates embedding vectors, and stores them in `~/.continue/index/`.
+2. When you type `@codebase` in the chat, Continue runs a semantic search over the index to find the most relevant code chunks and injects them as context before sending your message to the chat model.
+3. The chat model then answers with awareness of your full project, not just the currently open file.
+
+### Activating it
+
+In the Continue chat panel, type `@codebase` followed by your question:
+
+```
+@codebase Where is the authentication middleware defined?
+@codebase What does the setup.sh logging system do?
+```
+
+The `@codebase` tag must be **explicit** — it does not activate automatically. Continue will not inject repository context unless you use it.
+
+### Watching indexing progress
+
+Indexing runs silently. To see its progress:
+
+```
+View → Output → select "Continue" from the dropdown
+```
+
+On first load of a large project, indexing can take several minutes. The `@codebase` results will be incomplete until indexing finishes.
+
+### Why results may be poor
+
+- **Context window too small** — the chat model receives many chunks from the index, but if its context window is small, older chunks get dropped. See [Ollama Context Window](#ollama-context-window).
+- **Index is stale** — if you add many new files, force a re-index: Continue panel → gear icon → **Re-index**.
+- **Model quality** — `nomic-embed-text` at 137M parameters is lightweight. For large monorepos, results may miss relevant files. Consider a larger embeddings model if accuracy matters.
+
+---
+
+## Ollama Context Window
+
+When reading multiple files simultaneously — as happens with `@codebase` or long chat sessions — the model's context window is the binding constraint. If the context fills up, Ollama silently drops the oldest content from the conversation, causing the model to "forget" earlier files or instructions.
+
+### Default context sizes
+
+Ollama sets a default `num_ctx` (context window) of **2048 tokens** for most models unless overridden. This is very small for code tasks. The models in this setup support much larger windows:
+
+| Model | Maximum context | Recommended `num_ctx` |
+| :--- | :--- | :--- |
+| `llama3.1:8b` | 131 072 tokens | 8 192 – 32 768 |
+| `qwen2.5-coder:7b` | 32 768 tokens | 8 192 – 32 768 |
+| `qwen2.5-coder:1.5b` | 32 768 tokens | 4 096 (autocomplete only) |
+
+Larger `num_ctx` consumes proportionally more VRAM/RAM. On a 16 GB RAM machine, 8 192–16 384 is a safe range for the 7–8B models.
+
+### Setting context length in config.yaml
+
+The cleanest way is to declare `contextLength` per model in Continue's config, which passes `num_ctx` to Ollama on every request:
+
+```yaml
+name: Local Ollama Config
+version: 0.0.1
+schema: v1
+
+models:
+  - name: Llama 3.1 8B
+    provider: ollama
+    model: llama3.1:8b
+    apiBase: http://localhost:11434
+    contextLength: 16384
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 2.5 Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://localhost:11434
+    contextLength: 16384
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 2.5 Coder 1.5B
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    apiBase: http://localhost:11434
+    contextLength: 4096
+    roles:
+      - autocomplete
+
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text:latest
+    apiBase: http://localhost:11434
+    roles:
+      - embed
+```
+
+### Setting context length via a custom Modelfile
+
+Alternatively, create a persistent Ollama model variant with a baked-in context size:
+
+```bash
+cat > /tmp/Modelfile-qwen-large << 'EOF'
+FROM qwen2.5-coder:7b
+PARAMETER num_ctx 16384
+EOF
+ollama create qwen2.5-coder:7b-ctx16k -f /tmp/Modelfile-qwen-large
+```
+
+Then reference `qwen2.5-coder:7b-ctx16k` in `config.yaml`. This avoids relying on Continue to pass the parameter correctly.
+
+### Checking current context size at runtime
+
+```bash
+curl -s http://localhost:11434/api/show \
+  -d '{"name":"qwen2.5-coder:7b"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('model_info',{}).get('qwen2.context_length') or d.get('parameters',''))"
+```
+
+---
+
 ## Verifying the Setup
 
 ### 1. Confirm Ollama is running and all models are present
@@ -282,6 +410,30 @@ rm ~/.continue/config.json
 ### How to open config.yaml from VS Code
 
 Click the **gear icon** at the bottom-right corner of the Continue panel, then select **Open Config**. This opens `~/.continue/config.yaml` directly in the editor.
+
+---
+
+## Alternatives to Continue
+
+If the Continue experience is slow, lacks context, or causes VS Code to hang on lower-end hardware, these extensions are worth trying:
+
+### Twinny
+
+A fully local, privacy-first alternative to Continue. Works with Ollama out of the box with minimal configuration — no YAML schema requirements, no indexing pipeline to manage. Good default choice when you want autocomplete and chat without the overhead.
+
+- VS Code marketplace: search **Twinny**
+- Configure: Settings → Twinny → set Ollama endpoint to `http://localhost:11434` and pick a model
+
+### Llama Coder
+
+Focused exclusively on tab autocomplete. If inline completion is your primary need and Continue's autocomplete feels slow or unreliable (especially on CPU-only setups), Llama Coder has less overhead and tends to produce faster ghost-text suggestions.
+
+- VS Code marketplace: search **Llama Coder**
+- Works directly with Ollama; set the FIM model to `qwen2.5-coder:1.5b`
+
+### When to stick with Continue
+
+Continue remains the best option when you need `@codebase` semantic search, the Edit (`Ctrl+I`) workflow, or plan to use cloud providers alongside local models. The complexity of its configuration pays off at that feature level.
 
 ---
 
