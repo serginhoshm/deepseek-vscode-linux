@@ -1,0 +1,142 @@
+# Ollama Usage Reference
+
+This document records the active Ollama configuration after a successful setup run and serves as a quick reference for day-to-day usage.
+
+---
+
+## Active Configuration
+
+| Property | Value |
+| :--- | :--- |
+| **Model** | `deepseek-r1:7b` |
+| **Endpoint** | `http://localhost:11434` |
+| **Network exposure** | `0.0.0.0:11434` (accessible on local network) |
+| **Autocomplete model** | `deepseek-r1:1.5b` |
+| **Continue.dev config** | `~/.continue/config.json` |
+
+---
+
+## VS Code Integration
+
+### Continue.dev
+
+The `~/.continue/config.json` was generated automatically by `setup.sh`:
+
+```json
+{
+  "models": [
+    {
+      "title": "DeepSeek (Local)",
+      "provider": "ollama",
+      "model": "deepseek-r1:7b"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "DeepSeek Autocomplete",
+    "provider": "ollama",
+    "model": "deepseek-r1:1.5b"
+  },
+  "allowAnonymousTelemetry": false
+}
+```
+
+To open it manually: gear icon at the bottom-right of the Continue panel → `config.json`.
+
+### Cline / Roo Code
+
+Settings → Provider → **Ollama** → Base URL: `http://localhost:11434` → Model: `deepseek-r1:7b`
+
+---
+
+## Useful Commands
+
+```bash
+# List all downloaded models
+ollama list
+
+# Chat with the model directly in the terminal
+ollama run deepseek-r1:7b
+
+# Pull a different model size
+ollama pull deepseek-r1:1.5b
+ollama pull deepseek-r1:14b
+
+# Remove a model
+ollama rm deepseek-r1:7b
+
+# Check service status
+sudo systemctl status ollama
+
+# Watch live service logs
+sudo journalctl -u ollama -f
+
+# Check GPU usage during inference
+nvidia-smi
+```
+
+---
+
+## Service Management
+
+Ollama runs as a systemd service and starts automatically on boot.
+
+```bash
+# Start the service
+sudo systemctl start ollama
+
+# Stop the service
+sudo systemctl stop ollama
+
+# Restart the service
+sudo systemctl restart ollama
+
+# Disable autostart
+sudo systemctl disable ollama
+```
+
+### Network exposure
+
+This installation has Ollama bound to `0.0.0.0:11434`, making it reachable from other machines on the local network (e.g. devcontainers or VMs). The override is at:
+
+```
+/etc/systemd/system/ollama.service.d/network.conf
+```
+
+To revert to localhost-only, remove that file and restart:
+
+```bash
+sudo rm /etc/systemd/system/ollama.service.d/network.conf
+sudo systemctl daemon-reload
+sudo systemctl restart ollama
+```
+
+---
+
+## Troubleshooting
+
+### Model responds very slowly
+
+Check whether Ollama is using the GPU:
+
+```bash
+sudo journalctl -u ollama --no-pager | grep -iE "(cuda|rocm|gpu)"
+nvidia-smi
+```
+
+If the GPU is not being used, verify the NVIDIA driver is loaded:
+
+```bash
+nvidia-smi --query-gpu=name,driver_version --format=csv,noheader
+```
+
+### Service not starting
+
+```bash
+sudo journalctl -u ollama -n 50 --no-pager
+```
+
+### Port already in use
+
+```bash
+sudo lsof -i :11434
+```
