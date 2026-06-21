@@ -562,7 +562,9 @@ pull_continue_models() {
 generate_continue_config() {
     log_step "Continue.dev configuration"
     local config_dir="$HOME/.continue"
-    local config_file="$config_dir/config.json"
+    # Newer Continue versions (0.9+) use config.yaml; older ones use config.json.
+    # We write config.yaml as the primary file and leave config.json for compatibility.
+    local config_file="$config_dir/config.yaml"
 
     echo ""
     read -rp "Generate Continue.dev configuration? [Y/n]: " GEN_CONTINUE
@@ -579,35 +581,47 @@ generate_continue_config() {
     mkdir -p "$config_dir"
     log_data "Target file: $config_file"
 
-    log_action "Writing config.json"
+    log_action "Writing config.yaml"
     cat > "$config_file" <<'EOF'
-{
-  "models": [
-    {
-      "title": "Llama 3.1 8B",
-      "provider": "ollama",
-      "model": "llama3.1:8b"
-    },
-    {
-      "title": "Qwen 2.5 Coder 7B",
-      "provider": "ollama",
-      "model": "qwen2.5-coder:7b"
-    }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Qwen 2.5 Coder 1.5B",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:1.5b"
-  },
-  "embeddingsProvider": {
-    "provider": "ollama",
-    "model": "nomic-embed-text:latest"
-  },
-  "allowAnonymousTelemetry": false
-}
+name: Local Ollama Config
+version: 0.0.1
+schema: v1
+
+models:
+  - name: Llama 3.1 8B
+    provider: ollama
+    model: llama3.1:8b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 2.5 Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 2.5 Coder 1.5B
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    apiBase: http://localhost:11434
+    roles:
+      - autocomplete
+
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text:latest
+    apiBase: http://localhost:11434
+    roles:
+      - embed
 EOF
-    log_output "Generated config.json" "$(cat "$config_file")"
-    log_result_ok "config.json saved to $config_file"
+    log_output "Generated config.yaml" "$(cat "$config_file")"
+    log_result_ok "config.yaml saved to $config_file"
     success "Continue.dev configuration saved to: $config_file"
 }
 
@@ -633,7 +647,7 @@ print_summary() {
     echo ""
     echo -e "${BOLD}Next steps:${NC}"
     echo "  1. Install the Continue.dev or Cline extension in VS Code"
-    echo "  2. In Continue: gear icon → config.json already configured"
+    echo "  2. In Continue: gear icon → config.yaml already configured"
     echo "  3. In Cline: Settings → Provider → Ollama → http://localhost:11434"
     echo ""
     echo -e "${BOLD}Useful commands:${NC}"

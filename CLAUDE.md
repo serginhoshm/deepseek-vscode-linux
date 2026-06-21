@@ -39,6 +39,8 @@ The two primary artifacts are:
 | `README.md` | User-facing guide covering both manual and automated setup paths |
 | `Instructions.md` | Original technical reference document (source material) |
 | `docs/logging.md` | Manual describing the logging system implemented in `setup.sh` |
+| `docs/continue-dev.md` | Complete Continue.dev 2.0 configuration guide (YAML format, roles, troubleshooting) |
+| `docs/ollama-usage.md` | Quick reference for active Ollama config and useful commands |
 
 ---
 
@@ -52,7 +54,9 @@ The two primary artifacts are:
 ├── setup.sh             # Interactive setup script
 ├── .gitignore           # Excludes logs/
 ├── docs/
-│   └── logging.md       # Logging system manual
+│   ├── logging.md       # Logging system manual
+│   ├── continue-dev.md  # Continue.dev 2.0 full configuration guide
+│   └── ollama-usage.md  # Ollama quick reference
 └── logs/                # Runtime log files (gitignored, created by setup.sh)
 ```
 

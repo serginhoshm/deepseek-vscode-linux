@@ -11,7 +11,7 @@ This document records the active Ollama configuration after a successful setup r
 | **DeepSeek model** | `deepseek-r1:7b` (terminal / Cline) |
 | **Endpoint** | `http://localhost:11434` |
 | **Network exposure** | `0.0.0.0:11434` (accessible on local network) |
-| **Continue.dev config** | `~/.continue/config.json` |
+| **Continue.dev config** | `~/.continue/config.yaml` (primary) |
 
 ### Continue.dev model stack
 
@@ -30,36 +30,51 @@ This document records the active Ollama configuration after a successful setup r
 
 ### Continue.dev
 
-The `~/.continue/config.json` was generated automatically by `setup.sh`:
+The `~/.continue/config.yaml` was generated automatically by `setup.sh` (Continue 0.9+ uses YAML as the primary config format):
 
-```json
-{
-  "models": [
-    {
-      "title": "Llama 3.1 8B",
-      "provider": "ollama",
-      "model": "llama3.1:8b"
-    },
-    {
-      "title": "Qwen 2.5 Coder 7B",
-      "provider": "ollama",
-      "model": "qwen2.5-coder:7b"
-    }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Qwen 2.5 Coder 1.5B",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:1.5b"
-  },
-  "embeddingsProvider": {
-    "provider": "ollama",
-    "model": "nomic-embed-text:latest"
-  },
-  "allowAnonymousTelemetry": false
-}
+```yaml
+version: 0.0.1
+models:
+  - name: Llama 3.1 8B
+    provider: ollama
+    model: llama3.1:8b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 2.5 Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: Qwen 2.5 Coder 1.5B (autocomplete)
+    provider: ollama
+    model: qwen2.5-coder:1.5b
+    apiBase: http://localhost:11434
+    roles:
+      - autocomplete
+
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text:latest
+    apiBase: http://localhost:11434
+    roles:
+      - embed
+
+tabAutocompleteModel:
+  name: Qwen 2.5 Coder 1.5B
+  provider: ollama
+  model: qwen2.5-coder:1.5b
+  apiBase: http://localhost:11434
 ```
 
-To open it manually: gear icon at the bottom-right of the Continue panel → `config.json`.
+To open it manually: gear icon at the bottom-right of the Continue panel → `config.yaml`.
 
 ### Cline / Roo Code
 

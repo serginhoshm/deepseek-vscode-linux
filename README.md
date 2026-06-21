@@ -135,70 +135,17 @@ ollama run deepseek-r1:7b
 
 ### Continue.dev
 
-Open the Continue `config.json` (gear icon in the bottom-right corner of the Continue panel).
+`setup.sh` automatically generates `~/.continue/config.yaml` configured for the local Ollama stack. For the complete configuration reference — including the Continue 2.0 YAML format, model roles, troubleshooting, and cloud API setup — see [docs/continue-dev.md](docs/continue-dev.md).
 
-#### With Ollama (local/offline)
+**Quick summary of what gets configured:**
 
-The recommended model stack for Continue.dev uses four models pulled by `setup.sh`:
+| Role | Model |
+| :--- | :--- |
+| Chat / Edit | `llama3.1:8b`, `qwen2.5-coder:7b` |
+| Autocomplete | `qwen2.5-coder:1.5b` |
+| Embeddings (`@codebase`) | `nomic-embed-text:latest` |
 
-```bash
-ollama pull llama3.1:8b           # general chat
-ollama pull qwen2.5-coder:7b      # coding chat
-ollama pull qwen2.5-coder:1.5b    # autocomplete
-ollama pull nomic-embed-text:latest  # @codebase embeddings
-```
-
-> `deepseek-r1` is not recommended for Continue.dev — it outputs `<think>` reasoning tags that the extension does not render correctly. Use it via Cline or directly in the terminal instead.
-
-```json
-{
-  "models": [
-    {
-      "title": "Llama 3.1 8B",
-      "provider": "ollama",
-      "model": "llama3.1:8b"
-    },
-    {
-      "title": "Qwen 2.5 Coder 7B",
-      "provider": "ollama",
-      "model": "qwen2.5-coder:7b"
-    }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Qwen 2.5 Coder 1.5B",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:1.5b"
-  },
-  "embeddingsProvider": {
-    "provider": "ollama",
-    "model": "nomic-embed-text:latest"
-  },
-  "allowAnonymousTelemetry": false
-}
-```
-
-#### With the DeepSeek Cloud API
-
-Generate your key at [platform.deepseek.com](https://platform.deepseek.com/) and configure:
-
-```json
-{
-  "models": [
-    {
-      "title": "DeepSeek-V3 (Cloud)",
-      "provider": "deepseek",
-      "model": "deepseek-chat",
-      "apiKey": "your-api-key-here"
-    },
-    {
-      "title": "DeepSeek-R1 (Cloud Reasoning)",
-      "provider": "deepseek",
-      "model": "deepseek-reasoner",
-      "apiKey": "your-api-key-here"
-    }
-  ]
-}
-```
+> `deepseek-r1` is not used for Continue — it outputs raw `<think>` reasoning tags that the extension does not render. Use it via Cline or directly in the terminal.
 
 ---
 
